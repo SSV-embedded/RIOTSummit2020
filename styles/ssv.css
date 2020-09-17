@@ -1,0 +1,74 @@
+.special.slide-background {
+	background: rgb(20, 61, 119);
+}
+
+.slide-background:after {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	font-size: 18px;
+	text-align: center;
+	line-height: 35px;
+	color: #fff;
+	background-color: rgb(20, 61, 119);
+	background-image: url(../assets/logo_ssv_white.svg);
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: left;
+	content: 'Seamless Power Management on IoT Devices • Jürgen Fitschen • RIOT Summit 2020'
+}
+
+.title.slide-background:after {
+	content: '';
+}
+
+.reveal {
+	font-size: 28px;
+}
+
+.reveal h1 {
+	font-size: 1.5em;
+	text-transform: none;
+}
+
+.reveal h2 {
+	font-size: 1.3em;
+	text-transform: none;
+}
+
+.reveal h3 {
+	font-size: 0.8em;
+	text-transform: none;
+	text-align: left;
+}
+
+.reveal code {
+	font-size: 0.8em;
+}
+
+.reveal .slide-number {
+	padding: 0px 10px;
+	bottom: 0px;
+	right: 0px;
+	font-size: 18px;
+	line-height: 35px;
+	background: transparent;
+	font-family: "Source Sans Pro", Helvetica, sans-serif;
+}
+
+.reveal .nm {
+	margin: 0px;
+}
+
+.reveal .ls {
+	text-align: left;
+}
+
+.reveal .rs {
+	text-align: right;
+}
+
+.r-stack pre {
+	margin: 5px 0px 20px 0px;
+}

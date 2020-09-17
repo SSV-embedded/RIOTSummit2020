@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<title>Seamless Power Management on IoT Devices — Lessons from an HVAC Use Case using RIOT</title>
+		<link rel="stylesheet" href="./node_modules/highlight.js/styles/atom-one-dark.css">
+		<link rel="stylesheet" href="./node_modules/reveal.js/dist/reveal.css">
+		<link rel="stylesheet" href="./node_modules/reveal.js/dist/theme/white.css">
+		<link rel="stylesheet" href="./node_modules/reveal.js/dist/theme/white.css">
+		<link rel="stylesheet" href="./styles/ssv.css">
+		<script defer src="./node_modules/es-module-shims/dist/es-module-shims.js"></script>
+		<script type="importmap-shim">
+			{
+				"imports": {
+					"reveal.js": "./node_modules/reveal.js/dist/reveal.esm.js",
+					"reveal.js/": "./node_modules/reveal.js/",
+					"lit-element": "./node_modules/lit-element/lit-element.js",
+					"lit-element/": "./node_modules/lit-element/",
+					"lit-html": "./node_modules/lit-html/lit-html.js",
+					"lit-html/": "./node_modules/lit-html/"
+				}
+			}
+		</script>
+	</head>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<section class="title center special">
+						<h1>Seamless Power Management on IoT Devices — Lessons from an HVAC Use Case using RIOT</h1>
+						<p>Jürgen Fitschen - SSV Software Systems GmbH</p>
+					</section>
+					<section>
+						<div>
+							<h2>Who am I?</h2>
+							<p class="nm">Jürgen Fitschen (<a href="https://github.com/jue89">jue89</a> on GitHub)</p>
+							<p class="nm">Systems Engineer at <a href="https://ssv-embedded.de">SSV Software Systems</a>, Germany</p>
+							<p class="nm">Using RIOT since 2018</p>
+						</div>
+						<div class="fragment">
+							<h2 style="margin-top: 90px;">What we'll cover ...</h2>
+							<p class="nm">Why does good power management <em>matter</em>?</p>
+							<p class="fragment nm">How does it <em>work</em>?</p>
+							<p class="fragment nm">It's all about <em>timers</em>!</p>
+						</div>
+					</section>
+				</section>
+				<section>
+					<section class="special center">
+						<h2>Why does Good Power Management <em>Matter</em> to us?</h2>
+					</section>
+					<section>
+						<h2>Retrofit Systems are our Passion.</h2>
+						<ul>
+							<li class="fragment">Goal: enhance efficiency and value of existing systems and environments</li>
+							<li class="fragment">Sensors and actuators must be deployed within already existing systems</li>
+							<li class="fragment">Some retrofit systems require 100+ sensors</li>
+							<p class="fragment"><strong>⮩ Battery-powered sensors and actuators are required!</strong></p>
+						</ul>
+					</section>
+					<section>
+						<h2>Example Retrofit Setup: Battery-powered Sensors</h2>
+						<div class="r-stack">
+							<img src="./assets/floorplan-a.svg">
+							<img class="fragment" data-fragment-index="0" src="./assets/floorplan-b.svg">
+							<img class="fragment" data-fragment-index="1" src="./assets/floorplan-c.svg">
+						</div>
+						<ul style="margin-top: 20px;">
+							<li>Task: Send notifications when the windows should be opened</li>
+							<li class="fragment" data-fragment-index="0">Measure CO<sub>2</sub> contentration in every room</li>
+							<li class="fragment" data-fragment-index="1">Send the sensor reading to gateway</li>
+							<li class="fragment" data-fragment-index="2">Notify occupier upon high sensor readings via e-mail</li>
+						</ul>
+					</section>
+					<section>
+						<h2>The CO<sub>2</sub> Sensor's Application Sequence</h2>
+						<charge-experiment></charge-experiment>
+						<p class="fragment"><strong>⮩ Reduce power consumption during sleep phase!</strong></p>
+					</section>
+				</section>
+				<section>
+					<section class="special center">
+						<h2>How does Power Management <em>Work</em>?</h2>
+					</section>
+					<section>
+						<h2>The Internals of the Microcontroller <em>SAM R30</em><sup>[<a href="#/references">3</a>]</sup></h2>
+						<peripherals-experiment></peripherals-experiment>
+						<p class="fragment"><strong>⮩ Set the <em>SLEEPCFG</em> register to "STANDBY" and<br>the <em>RF Network Interface</em> to "SLEEP" during sleep phase!</strong></p>
+					</section>
+					<section>
+						<h2>RIOT has a Driver for Power Management</h2>
+						<pmlayered-experiment></pmlayered-experiment>
+						<ul>
+							<li><code>pm_layered</code> keeps track of which power mode can be entered</li>
+							<li class="fragment">The idle thread enters the lowest mode</li>
+							<li class="fragment">Someone must tell <code>pm_layered</code> which modes are allowed</li>
+						</ul>
+						<p class="fragment"><strong>⮩ For a seamless user experience, drivers must interact with <code>pm_layered</code></strong></p>
+					</section>
+				</section>
+				<section>
+					<section class="special center">
+						<h2>It's all about <em>Timers</em>!</h2>
+					</section>
+					<section>
+						<h2>RIOT's Current Default Timer System: <code>xtimer</code></h2>
+						<pre><code class="c" data-trim data-noescape data-line-numbers="|9-11,4-6|13-14|">
+						#include "xtimer.h"
+						#include "timex.h"
+
+						static void callback (void * arg) {
+							puts((char*) arg);
+						}
+
+						int main (void) {
+							/* 1. Run a callback after 3s */
+							static xtimer_t cb_timer = {.callback = callback, .arg = "Hello World"};
+							xtimer_set(&cb_timer, 3 * US_PER_SEC);
+
+							/* 2. Sleep the current thread for 60s */
+							xtimer_sleep(60);
+						}
+						</code></pre>
+						<img class="fragment" src="./assets/xtimer.svg">
+						<p class="fragment"><strong>⮩ <em>xtimer</em> requires the High Speed Timer to run all the time</strong></p>
+						<p class="fragment"><strong>⮩ STANDBY mode must not be entered at any time</strong></p>
+					</section>
+					<section>
+						<h2>There's an Alternative for the Rescue: <code>ztimer</code></h2>
+						<pre><code class="c" data-trim data-noescape data-line-numbers>
+						#include "ztimer.h"
+						#include "timex.h"
+
+						static void callback (void * arg) {
+							puts((char*) arg);
+						}
+
+						int main (void) {
+							/* 1. Run a callback after 3s */
+							static ztimer_t cb_timer = {.callback = callback, .arg = "Hello World"};
+							ztimer_set(ZTIMER_USEC, &cb_timer, 3 * US_PER_SEC);
+
+							/* 2. Sleep the current thread for 60s */
+							ztimer_sleep(ZTIMER_MSEC, 60 * MS_PER_SEC);
+						}
+						</code></pre>
+						<div class="r-stack">
+							<span class="fragment" style="width: 100%; background: #ffffff; display: flex; align-items: flex-start; justify-content: space-between;">
+								<div style="width: 55%;">
+									<code style="display: block; text-align: left; font-size: 0.5em;">App's Makefile:</code>
+									<pre><code class="makefile" data-trim data-noescape>
+										USEMODULE += ztimer ztimer_usec ztimer_msec
+									</code></pre>
+								</div>
+								<img src="./assets/ztimer-a.svg">
+							</span>
+							<span class="fragment" style="width: 100%; background: #ffffff; display: flex; align-items: flex-start; justify-content: space-between;">
+								<div style="width: 55%;">
+									<code style="display: block; text-align: left; font-size: 0.5em;">App's Makefile:</code>
+									<pre><code class="makefile" data-trim data-noescape>
+										USEMODULE += ztimer ztimer_usec ztimer_msec ztimer_periph_rtt
+										USEMODULE += pm_layered
+									</code></pre>
+									<code style="display: block; text-align: left; font-size: 0.5em;">samr30-based-board/include/board.h:</code>
+									<pre><code class="c" data-trim data-noescape>
+										# Make ZTIMER_USEC block/unblock STANDBY mode
+										#define CONFIG_ZTIMER_USEC_REQUIRED_PM_MODE PM_SLEEPCFG_SLEEPMODE_STANDBY
+										# Only block BACKUP mode on startup
+										#define PM_BLOCKER_INITIAL 0x0001
+									</code></pre>
+								</div>
+								<img src="./assets/ztimer-b.svg">
+							</span>
+						</div>
+						<p class="fragment"><strong>⮩ <code>ztimer</code> unblocks STANDBY mode if no <code>ztimer_t</code> requires <code>ZTIMER_USEC</code> to run</strong></p>
+					</section>
+					<section>
+						<h2><code>xtimer</code> & <code>ztimer</code> can be Friends and Coexist!</h2>
+						<span class="fragment">
+							<pre><code class="makefile">USEMODULE += ztimer ztimer_usec xtimer xtimer_on_ztimer evtimer</code></pre>
+							<img src="./assets/coexist-a.svg">
+						</span>
+						<p class="fragment"><strong>⮩ <code>xtimer_on_ztimer</code> blocks STANDBY mode all the time</strong></p>
+						<span class="fragment">
+							<pre><code class="makefile" data-trim data-noescape>
+								USEMODULE += ztimer ztimer_usec ztimer_msec ztimer_periph_rtt ztimer_xtimer_compat evtimer evtimer_on_ztimer
+								# evtimer_on_ztimer hasn't been merged, yet. See <a href="https://github.com/RIOT-OS/RIOT/pull/13661">Pull Request #13661</a>
+							</code></pre>
+							<img src="./assets/coexist-b.svg"  style="width: 600px;">
+						</span>
+						<p class="fragment"><strong>⮩ <code>ztimer_xtimer_compat</code> doesn't implement <code>xtimer_*64()</code> methods</strong></p>
+						<p class="fragment"><strong>⮩ ztimer is utilized in our use case!</strong></p>
+					</section>
+				</section>
+				<section>
+					<section class="special center">
+						<h2>RIOT & Power Management: Status Quo?</h2>
+					</section>
+					<section>
+						<h2>Conclusion</h2>
+						<p class="fragment ls">RIOT has all important parts for PM inside ...</p>
+						<p class="fragment rs">... but by default they aren't configured for reasonable power saving.</p>
+						<p class="fragment ls">RIOT has three different timer systems ...</p>
+						<p class="fragment rs">... but the <em>RIOT Developer Memo</em> could lead to one standard system.<br>(cf. <a href="https://github.com/RIOT-OS/RIOT/pull/12970">#12970</a>)</p>
+						<p class="fragment"><strong>RIOT is heading in the right direction for seamless power management!</strong></p>
+					</section>
+					<section id="references">
+						<h2>References</h2>
+						<ol>
+							<li><a href="https://tadiranbatteries.de/pdf/lithium-thionyl-chloride-batteries/SL-860.pdf">Tadiran Batteries GmbH - Datasheet: SL-860</a></li>
+							<li><a href="https://tadiranbatteries.de/pdf/anwendungen/lithiumbatterien-fuer-funksensornetzwerke.pdf">Dittrich, Menachem, Yamin, Adamas - Lithiumbatterien für Funksensornetzwerke</a></li>
+							<li><a href="https://www.microchip.com/design-centers/wireless-connectivity/embedded-wireless/802-15-4/hardware/sam-r30">Microchip Technology Inc. - SAM R30 Microcontroller</a></li>
+						</ol>
+					</section>
+				</section>
+			</div>
+		</div>
+		<script type="module-shim">
+			import './components/charge/experiment.js';
+			import './components/peripherals/experiment.js';
+			import './components/pm_layered/experiment.js';
+			import Reveal from 'reveal.js';
+			import Highlight from 'reveal.js/plugin/highlight/highlight.esm.js';
+			let deck = new Reveal({
+				controls: false,
+				progress: false,
+				slideNumber: true,
+				hash: true,
+				center: false,
+				transition: 'none',
+				backgroundTransition: 'none',
+				plugins: [Highlight],
+				pdfSeparateFragments: false
+			});
+			deck.initialize();
+		</script>
+	</body>
+</html>

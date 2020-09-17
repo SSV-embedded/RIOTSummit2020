@@ -1,0 +1,13 @@
+<center>
+
+# RIOT Summit 2020
+
+Slides of the [RIOT Summit 2020](https://summit.riot-os.org/2020/) talk
+
+**Seamless Power Management on IoT Devices - Lessons from an HVAC Use Case using RIOT**
+
+presented by
+
+**Jürgen Fitschen, SSV Software System GmbH**
+
+</center>

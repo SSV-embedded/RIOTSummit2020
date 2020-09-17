@@ -1,0 +1,10 @@
+{
+  "name": "riot-summmit-2020-slides",
+  "dependencies": {
+    "es-module-shims": "^0.5.2",
+    "highlight.js": "^10.2.0",
+    "lit-element": "^2.4.0",
+    "reveal.js": "^4.0.2",
+    "systemjs": "^6.6.1"
+  }
+}
