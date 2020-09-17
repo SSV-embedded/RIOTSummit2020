@@ -43,6 +43,10 @@
 	text-align: left;
 }
 
+.reveal img {
+	max-height: none;
+}
+
 .reveal code {
 	font-size: 0.8em;
 }
