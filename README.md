@@ -1,5 +1,3 @@
-<center>
-
 # RIOT Summit 2020
 
 Slides of the [RIOT Summit 2020](https://summit.riot-os.org/2020/) talk
@@ -8,6 +6,6 @@ Slides of the [RIOT Summit 2020](https://summit.riot-os.org/2020/) talk
 
 presented by
 
-**Jürgen Fitschen, SSV Software System GmbH**
+**Jürgen Fitschen, SSV Software System GmbH**.
 
-</center>
+[These slides are hosted on GitHub pages!](https://SSV-embedded.github.io/RIOTSummit2020/)
